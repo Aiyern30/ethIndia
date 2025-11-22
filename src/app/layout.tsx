@@ -23,13 +23,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-        return (
-          <html lang="en">
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-              <Web3Provider>
-                {children}
-              </Web3Provider>
-            </body>
-          </html>
-        );
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Web3Provider>{children}</Web3Provider>
+      </body>
+    </html>
+  );
 }

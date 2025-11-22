@@ -20,7 +20,14 @@ contract Marketplace {
 
     function listItem(string memory name, uint256 price) public {
         itemCount++;
-        items[itemCount] = Item(itemCount, msg.sender, msg.sender, name, price, true);
+        items[itemCount] = Item(
+            itemCount,
+            msg.sender,
+            msg.sender,
+            name,
+            price,
+            true
+        );
         emit ItemListed(itemCount, msg.sender, name, price);
     }
 

@@ -8,7 +8,6 @@ const nextConfig = {
         "@magic-ext/oauth": false,
       };
     }
-
     return config;
   },
 };

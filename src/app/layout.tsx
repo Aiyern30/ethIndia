@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Web3Provider from "./Web3Provider";
-import MarketplaceDemo from "./MarketplaceDemo";
+// import MarketplaceDemo from "./MarketplaceDemo";
 
 // Remove Geist font setup due to missing export
 
@@ -20,7 +20,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <Web3Provider>
-          <MarketplaceDemo />
+          {/* <MarketplaceDemo /> */}
           {children}
         </Web3Provider>
       </body>

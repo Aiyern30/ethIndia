@@ -4,7 +4,6 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
-import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 
 interface NFTItem {
   id: number;
@@ -84,40 +83,46 @@ const AnimatedGrid = () => {
 };
 
 // Animated character component
-// const AnimatedChar = ({ char }: { char: string; index: number }) => {
-//   const [isHovered, setIsHovered] = useState(false);
+const AnimatedChar = ({ char }: { char: string; index: number }) => {
+  const [isHovered, setIsHovered] = useState(false);
 
-//   return (
-//     <span
-//       style={{
-//         display: char === " " ? "inline" : "inline-block",
-//         color: isHovered ? "rgb(219, 39, 119)" : "inherit",
-//       }}
-//     >
-//       <motion.span
-//         className="inline-block cursor-default"
-//         onMouseEnter={() => setIsHovered(true)}
-//         onMouseLeave={() => setIsHovered(false)}
-//         animate={{
-//           scale: isHovered ? 1.3 : 1,
-//           y: isHovered ? -10 : 0,
-//           rotateZ: isHovered ? 10 : 0,
-//         }}
-//         transition={{
-//           type: "spring",
-//           stiffness: 300,
-//           damping: 15,
-//         }}
-//       >
-//         {char === " " ? "\u00A0" : char}
-//       </motion.span>
-//     </span>
-//   );
-// };
+  return (
+    <span
+      style={{
+        display: char === " " ? "inline" : "inline-block",
+        color: isHovered ? "rgb(219, 39, 119)" : "inherit",
+      }}
+    >
+      <motion.span
+        className="inline-block cursor-default"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        animate={{
+          scale: isHovered ? 1.3 : 1,
+          y: isHovered ? -10 : 0,
+          rotateZ: isHovered ? 10 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 15,
+        }}
+      >
+        {char === " " ? "\u00A0" : char}
+      </motion.span>
+    </span>
+  );
+};
 
 // Animated title with interactive characters
 const AnimatedTitle = ({ text }: { text: string }) => {
-  return <TextHoverEffect text={text} />;
+  return (
+    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 bg-linear-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent leading-tight">
+      {text.split("").map((char, index) => (
+        <AnimatedChar key={index} char={char} index={index} />
+      ))}
+    </h1>
+  );
 };
 
 // 3D floating NFT card

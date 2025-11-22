@@ -1,23 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Header from "@/components/landing/Header";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyChooseUs from "@/components/landing/WhyChooseUs";
 import TrendingNFT from "@/components/landing/TrendingNFT";
 import CTASection from "@/components/landing/CTASection";
-import Footer from "@/components/landing/Footer";
 
 export default function LandingPage() {
-  const [theme, setTheme] = useState("dark");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-
   const nftItems = [
     {
       id: 1,
@@ -50,13 +38,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300 pt-[88px]">
-      <Header
-        theme={theme}
-        toggleTheme={toggleTheme}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-      />
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300">
       <HeroSection nftItems={nftItems} />
 
       {/* Stats Section */}
@@ -92,7 +74,6 @@ export default function LandingPage() {
       <WhyChooseUs />
       <TrendingNFT nftItems={nftItems} />
       <CTASection />
-      <Footer />
     </div>
   );
 }

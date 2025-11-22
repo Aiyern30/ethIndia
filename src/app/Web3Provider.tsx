@@ -1,3 +1,4 @@
+"use client";
 import { ThirdwebProvider, ConnectWallet } from "@thirdweb-dev/react";
 
 export default function Web3Provider({

@@ -45,36 +45,43 @@ export default function LandingPage() {
       {/* Stats Section */}
       <section id="stats" className="py-20 px-6 bg-gray-50 dark:bg-gray-900/50">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { label: "Total Volume", value: 127000, suffix: " ETH" },
-              { label: "NFTs Created", value: 2500000, suffix: "+" },
-              { label: "Active Users", value: 500000, suffix: "+" },
-              { label: "Transactions", value: 10000000, suffix: "+" },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex justify-center items-center">
-                  <NumberTicker
-                    value={stat.value}
-                    startValue={0}
-                    delay={0.2 + i * 0.2}
-                    decimalPlaces={0}
-                    className="mr-1"
-                  />
-                  <span>{stat.suffix}</span>
-                </div>
-                <div className="text-gray-600 dark:text-gray-400">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
+          <div className="w-full overflow-x-auto">
+            <div
+              className="grid gap-8"
+              style={{
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              }}
+            >
+              {[
+                { label: "Total Volume", value: 127000, suffix: " ETH" },
+                { label: "NFTs Created", value: 2500000, suffix: "+" },
+                { label: "Active Users", value: 500000, suffix: "+" },
+                { label: "Transactions", value: 10000000, suffix: "+" },
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="text-center min-w-40"
+                >
+                  <div className="text-2xl md:text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex justify-center items-center wrap-break-word truncate">
+                    <NumberTicker
+                      value={stat.value}
+                      startValue={0}
+                      delay={0.2 + i * 0.2}
+                      decimalPlaces={0}
+                      className="mr-1"
+                    />
+                    <span className="whitespace-nowrap">{stat.suffix}</span>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-400">
+                    {stat.label}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

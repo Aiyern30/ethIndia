@@ -198,8 +198,8 @@ const FloatingNFTCard = ({
           priority={index === 0}
         />
 
-        {/* NFT Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+        {/* NFT Info Overlay - Always visible on mobile, hover on desktop */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 to-transparent translate-y-0 md:translate-y-full md:group-hover:translate-y-0 transition-transform duration-300">
           <h3 className="text-white font-bold text-sm md:text-base">
             {nft.title}
           </h3>
@@ -394,21 +394,6 @@ export default function HeroSection({ nftItems }: HeroSectionProps) {
 
       {/* Spacer to prevent overlap with next section */}
       <div className="h-32 lg:h-0"></div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <div className="w-6 h-10 border-2 border-purple-500/50 rounded-full flex items-start justify-center p-2">
-          <motion.div
-            className="w-1.5 h-1.5 bg-purple-500 rounded-full"
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-      </motion.div>
     </section>
   );
 }

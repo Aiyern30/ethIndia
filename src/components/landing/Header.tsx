@@ -2,20 +2,21 @@
 import { motion } from "framer-motion";
 import { ConnectWallet } from "@thirdweb-dev/react";
 import { Moon, Sun, Menu, X, Sparkles } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface HeaderProps {
-  theme: string;
-  toggleTheme: () => void;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
 }
 
 export default function Header({
-  theme,
-  toggleTheme,
   mobileMenuOpen,
   setMobileMenuOpen,
 }: HeaderProps) {
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+
   return (
     <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
       <nav className="container mx-auto px-6 py-4">

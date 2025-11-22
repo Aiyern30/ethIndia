@@ -1,4 +1,5 @@
-import { ethers } from "hardhat";
+import hardhat from "hardhat";
+const { ethers } = hardhat;
 
 async function main() {
   const Marketplace = await ethers.getContractFactory("Marketplace");

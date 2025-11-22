@@ -1,5 +1,6 @@
 {
   "name": "ethindia",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -19,6 +20,7 @@
     "wagmi": "^3.0.1"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

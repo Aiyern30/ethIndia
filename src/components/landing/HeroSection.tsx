@@ -276,19 +276,19 @@ export default function HeroSection({ nftItems }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
+    <section className="relative min-h-screen flex flex-col items-center px-6 overflow-hidden pt-20">
       {/* Animated Background Elements */}
       <GlowingOrbs />
       <AnimatedGrid />
       <Particles />
 
       {/* Content */}
-      <div className="container mx-auto relative z-10">
+      <div className="relative z-10 flex flex-col items-center justify-start w-full">
         <motion.div
           initial="initial"
           animate="animate"
           variants={staggerContainer}
-          className="text-center max-w-5xl mx-auto"
+          className="text-center max-w-4xl w-full mx-auto flex flex-col items-center justify-center"
         >
           {/* Badge */}
           <motion.div
@@ -387,7 +387,7 @@ export default function HeroSection({ nftItems }: HeroSectionProps) {
 
         {/* 3D Floating NFT Cards */}
         <div
-          className="relative mt-32 h-[500px] hidden lg:block"
+          className="relative mt-12 h-[400px] hidden lg:block w-full"
           style={{ perspective: "1000px" }}
         >
           {nftItems.slice(0, 3).map((nft, i) => (

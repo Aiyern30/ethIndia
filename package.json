@@ -9,9 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@thirdweb-dev/react": "^4.6.12",
+    "@web3modal/react": "^2.7.1",
+    "ethers": "^5.8.0",
     "next": "16.0.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "viem": "^2.39.3",
+    "wagmi": "^3.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

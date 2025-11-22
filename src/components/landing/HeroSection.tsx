@@ -125,11 +125,10 @@ const AnimatedTitle = ({ text }: { text: string }) => {
   );
 };
 
-// 3D floating NFT card
+// 3D floating NFT card - Keep 3D design but in a row
 const FloatingNFTCard = ({
   nft,
   index,
-  totalCards,
 }: {
   nft: NFTItem;
   index: number;
@@ -138,11 +137,11 @@ const FloatingNFTCard = ({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const rotateX = useSpring(useTransform(mouseY, [-300, 300], [15, -15]), {
+  const rotateX = useSpring(useTransform(mouseY, [-300, 300], [10, -10]), {
     stiffness: 100,
     damping: 30,
   });
-  const rotateY = useSpring(useTransform(mouseX, [-300, 300], [-15, 15]), {
+  const rotateY = useSpring(useTransform(mouseX, [-300, 300], [-10, 10]), {
     stiffness: 100,
     damping: 30,
   });
@@ -158,18 +157,13 @@ const FloatingNFTCard = ({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY]);
 
-  const angle = (index / totalCards) * Math.PI * 2;
-  const radius = 300;
-  const x = Math.cos(angle) * radius;
-  const y = Math.sin(angle) * radius * 0.3;
-
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0, z: -1000 }}
+      initial={{ opacity: 0, scale: 0, y: 50 }}
       animate={{
         opacity: 1,
         scale: 1,
-        z: 0,
+        y: 0,
       }}
       transition={{
         delay: index * 0.2,
@@ -177,16 +171,14 @@ const FloatingNFTCard = ({
         type: "spring",
         stiffness: 100,
       }}
-      className="absolute left-1/2 top-1/2 w-48 md:w-64 h-64 md:h-80 cursor-pointer"
+      className="w-full h-64 md:h-80 cursor-pointer"
       style={{
-        x: x,
-        y: y,
         rotateX,
         rotateY,
       }}
       whileHover={{
-        scale: 1.1,
-        z: 100,
+        scale: 1.05,
+        y: -10,
         transition: { duration: 0.3 },
       }}
     >
@@ -276,7 +268,7 @@ export default function HeroSection({ nftItems }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center px-6 overflow-hidden pt-20">
+    <section className="relative min-h-screen flex flex-col items-center px-6 overflow-hidden pt-20 pb-24">
       {/* Animated Background Elements */}
       <GlowingOrbs />
       <AnimatedGrid />
@@ -385,16 +377,23 @@ export default function HeroSection({ nftItems }: HeroSectionProps) {
           </motion.div>
         </motion.div>
 
-        {/* 3D Floating NFT Cards */}
-        <div
-          className="relative mt-12 h-[400px] hidden lg:block w-full"
-          style={{ perspective: "1000px" }}
-        >
-          {nftItems.slice(0, 3).map((nft, i) => (
-            <FloatingNFTCard key={nft.id} nft={nft} index={i} totalCards={3} />
-          ))}
+        {/* 3D Floating NFT Cards - Responsive Grid */}
+        <div className="relative mt-12 w-full max-w-7xl mx-auto z-20 px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {nftItems.map((nft, i) => (
+              <FloatingNFTCard
+                key={nft.id}
+                nft={nft}
+                index={i}
+                totalCards={nftItems.length}
+              />
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Spacer to prevent overlap with next section */}
+      <div className="h-32 lg:h-0"></div>
 
       {/* Scroll Indicator */}
       <motion.div

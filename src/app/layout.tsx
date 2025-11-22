@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased pt-[100px]">
+      <body className="antialiased pt-18 sm:pt-[100px]">
         <Web3Provider>
           {/* <MarketplaceDemo /> */}
           {children}

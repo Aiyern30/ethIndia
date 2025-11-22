@@ -4,6 +4,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import WhyChooseUs from "@/components/landing/WhyChooseUs";
 import TrendingNFT from "@/components/landing/TrendingNFT";
 import CTASection from "@/components/landing/CTASection";
+import { NumberTicker } from "@/components/ui/number-ticker";
 
 export default function LandingPage() {
   const nftItems = [
@@ -46,10 +47,10 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { label: "Total Volume", value: "127K ETH" },
-              { label: "NFTs Created", value: "2.5M+" },
-              { label: "Active Users", value: "500K+" },
-              { label: "Transactions", value: "10M+" },
+              { label: "Total Volume", value: 127000, suffix: " ETH" },
+              { label: "NFTs Created", value: 2500000, suffix: "+" },
+              { label: "Active Users", value: 500000, suffix: "+" },
+              { label: "Transactions", value: 10000000, suffix: "+" },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -59,8 +60,15 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                  {stat.value}
+                <div className="text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex justify-center items-center">
+                  <NumberTicker
+                    value={stat.value}
+                    startValue={0}
+                    delay={0.2 + i * 0.2}
+                    decimalPlaces={0}
+                    className="mr-1"
+                  />
+                  <span>{stat.suffix}</span>
                 </div>
                 <div className="text-gray-600 dark:text-gray-400">
                   {stat.label}

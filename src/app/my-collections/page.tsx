@@ -11,6 +11,7 @@ import {
   Package,
   AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -225,48 +226,53 @@ export default function MyCollectionsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {collections.map((collection) => (
-              <div
+              <Link
                 key={collection.address}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group"
+                href={`/collection/${collection.address}`}
+                className="cursor-pointer"
               >
-                {/* linear Header */}
-                <div className="h-32 bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative">
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                </div>
-
-                {/* Content */}
-                <div className="p-6 -mt-8 relative">
-                  <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center mb-4 border-4 border-white dark:border-gray-800">
-                    <Package className="w-8 h-8 text-purple-600" />
+                <div
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group"
+                >
+                  {/* linear Header */}
+                  <div className="h-32 bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative">
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
                   </div>
 
-                  <h3 className="text-xl font-bold mb-1 text-gray-900 dark:text-white">
-                    {collection.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    {collection.symbol}
-                  </p>
+                  {/* Content */}
+                  <div className="p-6 -mt-8 relative">
+                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center mb-4 border-4 border-white dark:border-gray-800">
+                      <Package className="w-8 h-8 text-purple-600" />
+                    </div>
 
-                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      NFTs Owned
-                    </span>
-                    <span className="text-lg font-bold text-purple-600">
-                      {collection.nftCount}
-                    </span>
+                    <h3 className="text-xl font-bold mb-1 text-gray-900 dark:text-white">
+                      {collection.name}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      {collection.symbol}
+                    </p>
+
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        NFTs Owned
+                      </span>
+                      <span className="text-lg font-bold text-purple-600">
+                        {collection.nftCount}
+                      </span>
+                    </div>
+
+                    <a
+                      href={`https://sepolia.etherscan.io/address/${collection.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View on Etherscan
+                    </a>
                   </div>
-
-                  <a
-                    href={`https://sepolia.etherscan.io/address/${collection.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View on Etherscan
-                  </a>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

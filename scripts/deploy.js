@@ -1,14 +1,13 @@
-
 import hre from "hardhat";
 
 async function main() {
-  const Marketplace = await hre.ethers.getContractFactory("Marketplace");
-  const marketplace = await Marketplace.deploy();
-  await marketplace.deployed();
-  console.log("Marketplace deployed to:", marketplace.address);
+  const Marketplace = await hre.ethers.deployContract("Marketplace");
+  await Marketplace.waitForDeployment();
+  console.log("Marketplace deployed at:", Marketplace.target);
+
+  const Factory = await hre.ethers.deployContract("CollectionFactory");
+  await Factory.waitForDeployment();
+  console.log("CollectionFactory deployed at:", Factory.target);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main().catch(console.error);

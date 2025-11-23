@@ -185,7 +185,7 @@ export default function MyCollectionsPage() {
             if (storedMetadataUri) {
               metadata = await fetchCollectionMetadata(storedMetadataUri);
             }
-          } catch (err) {
+          } catch {
             console.log("No metadata found for collection", addr);
           }
 
@@ -481,9 +481,11 @@ export default function MyCollectionsPage() {
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:border-purple-500 transition-colors">
                   {bannerImagePreview ? (
                     <div className="relative">
-                      <img
+                      <Image
                         src={bannerImagePreview}
                         alt="Banner Preview"
+                        width={1500}
+                        height={500}
                         className="w-full h-32 object-cover rounded-lg"
                       />
                       <button
@@ -525,9 +527,11 @@ export default function MyCollectionsPage() {
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:border-purple-500 transition-colors">
                   {profileImagePreview ? (
                     <div className="relative inline-block">
-                      <img
+                      <Image
                         src={profileImagePreview}
                         alt="Profile Preview"
+                        width={96}
+                        height={96}
                         className="w-24 h-24 object-cover rounded-full"
                       />
                       <button

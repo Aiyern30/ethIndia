@@ -2,7 +2,7 @@
 "use client";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { Shield, Zap, TrendingUp } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 
 export default function WhyChooseUs() {
   const features = [

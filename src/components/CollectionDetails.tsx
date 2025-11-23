@@ -692,7 +692,7 @@ export default function CollectionDetailPage({
                 )}
 
                 {/* Add new attribute */}
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     placeholder="Trait type (e.g., Color)"

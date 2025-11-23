@@ -1,6 +1,8 @@
-import "@nomicfoundation/hardhat-toolbox";
-import dotenv from "dotenv";
+/* eslint-disable @typescript-eslint/no-require-imports */
+const dotenv = require("dotenv");
 dotenv.config();
+
+require("@nomicfoundation/hardhat-toolbox");
 
 const config = {
   solidity: "0.8.20",
@@ -12,4 +14,4 @@ const config = {
   }
 };
 
-export default config;
+module.exports = config;

@@ -231,9 +231,7 @@ export default function MyCollectionsPage() {
                 href={`/collection/${collection.address}`}
                 className="cursor-pointer"
               >
-                <div
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group"
-                >
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group">
                   {/* linear Header */}
                   <div className="h-32 bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative">
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />

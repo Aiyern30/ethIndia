@@ -1,6 +1,5 @@
 "use client";
 import "./globals.css";
-import { QueryProvider } from "@/components/QueryProvider";
 import Web3Provider from "./Web3Provider";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
@@ -17,14 +16,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         <Web3Provider>
-          <QueryProvider>
-            <Header
-              mobileMenuOpen={mobileMenuOpen}
-              setMobileMenuOpen={setMobileMenuOpen}
-            />
-            <main className="pt-18 sm:pt-[100px]">{children}</main>
-            <Footer />
-          </QueryProvider>
+          <Header
+            mobileMenuOpen={mobileMenuOpen}
+            setMobileMenuOpen={setMobileMenuOpen}
+          />
+          <main className="pt-18 sm:pt-[100px]">{children}</main>
+          <Footer />
         </Web3Provider>
       </body>
     </html>

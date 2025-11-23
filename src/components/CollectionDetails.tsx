@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 import { useState, useEffect, useCallback } from "react";
-import { useAddress, useSigner } from "@thirdweb-dev/react";
+import { NFTMetadata, useAddress, useSigner } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
   Plus,
@@ -10,10 +11,16 @@ import {
   ArrowLeft,
   Trash2,
   Package,
+  Upload,
+  X,
 } from "lucide-react";
 import Image from "next/image";
+import {
+  NFTAttribute,
+  fetchNFTMetadata,
+  uploadNFTMetadata,
+} from "@/lib/storage";
 
-// Use this prop to pass the collection address from your route
 interface CollectionDetailProps {
   collectionAddress: string;
 }
@@ -81,11 +88,7 @@ interface NFT {
   tokenId: string;
   tokenURI: string;
   owner: string;
-  metadata?: {
-    name?: string;
-    description?: string;
-    image?: string;
-  };
+  metadata?: NFTMetadata;
 }
 
 interface CollectionInfo {
@@ -104,15 +107,55 @@ export default function CollectionDetailPage({
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMintModal, setShowMintModal] = useState(false);
-  const [tokenURI, setTokenURI] = useState("");
+
+  // Mint form state
+  const [nftName, setNftName] = useState("");
+  const [nftDescription, setNftDescription] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [attributes, setAttributes] = useState<NFTAttribute[]>([]);
+  const [newTraitType, setNewTraitType] = useState("");
+  const [newTraitValue, setNewTraitValue] = useState("");
+
   const [minting, setMinting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const signer = useSigner();
   const address = useAddress();
 
-  // Fetch collection info and NFTs
+  // Handle image file selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Add attribute
+  const addAttribute = () => {
+    if (newTraitType && newTraitValue) {
+      setAttributes([
+        ...attributes,
+        { trait_type: newTraitType, value: newTraitValue },
+      ]);
+      setNewTraitType("");
+      setNewTraitValue("");
+    }
+  };
+
+  // Remove attribute
+  const removeAttribute = (index: number) => {
+    setAttributes(attributes.filter((_, i) => i !== index));
+  };
+
+  // Fetch collection data
   const fetchCollectionData = useCallback(async () => {
     if (!signer) {
       setLoading(false);
@@ -127,7 +170,6 @@ export default function CollectionDetailPage({
         signer
       );
 
-      // Get collection info
       const [name, symbol, owner, nextTokenId] = await Promise.all([
         contract.name(),
         contract.symbol(),
@@ -153,20 +195,9 @@ export default function CollectionDetailPage({
                 contract.ownerOf(i),
               ]);
 
-              // Try to fetch metadata from URI
               let metadata = undefined;
               try {
-                if (uri.startsWith("http")) {
-                  const response = await fetch(uri);
-                  metadata = await response.json();
-                } else if (uri.startsWith("ipfs://")) {
-                  const ipfsUrl = uri.replace(
-                    "ipfs://",
-                    "https://ipfs.io/ipfs/"
-                  );
-                  const response = await fetch(ipfsUrl);
-                  metadata = await response.json();
-                }
+                metadata = await fetchNFTMetadata(uri);
               } catch {
                 console.log("Could not fetch metadata for token", i);
               }
@@ -178,7 +209,6 @@ export default function CollectionDetailPage({
                 metadata,
               };
             } catch {
-              // Token might be burned
               return null;
             }
           })()
@@ -199,39 +229,87 @@ export default function CollectionDetailPage({
     fetchCollectionData();
   }, [fetchCollectionData]);
 
+  // Handle mint with Thirdweb Storage
   async function handleMint(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!imageFile) {
+      setError("Please select an image");
+      return;
+    }
+
     setMinting(true);
     setError(null);
     setTxHash(null);
+    setUploadProgress("Preparing upload...");
 
     try {
       if (!signer) throw new Error("Wallet not connected");
       if (!collectionInfo) throw new Error("Collection not loaded");
+      if (!address) throw new Error("Address not found");
 
       // Check if user is the owner
-      if (collectionInfo.owner.toLowerCase() !== address?.toLowerCase()) {
+      if (collectionInfo.owner.toLowerCase() !== address.toLowerCase()) {
         throw new Error("Only the collection owner can mint NFTs");
       }
 
+      // Get next token ID
       const contract = new ethers.Contract(
         collectionAddress,
         COLLECTION_ABI,
         signer
       );
-      const tx = await contract.mint(tokenURI);
+      const nextTokenId = await contract.nextTokenId();
+
+      // Upload to IPFS using Thirdweb Storage
+      setUploadProgress("Uploading image to IPFS...");
+
+      const { metadataUri } = await uploadNFTMetadata({
+        name: nftName || `${collectionInfo.name} #${nextTokenId}`,
+        description: nftDescription,
+        imageFile: imageFile,
+        contractAddress: collectionAddress,
+        tokenId: nextTokenId.toString(),
+        ownerWallet: address,
+        attributes: attributes,
+        transactions: [
+          {
+            type: "minted",
+            to: address,
+            timestamp: Date.now(),
+            txHash: "",
+          },
+        ],
+      });
+
+      setUploadProgress("Metadata uploaded! Minting NFT...");
+
+      // Mint NFT with metadata URI
+      const tx = await contract.mint(metadataUri);
       setTxHash(tx.hash);
+      setUploadProgress("Transaction sent! Waiting for confirmation...");
+
       await tx.wait();
+      setUploadProgress("NFT minted successfully!");
 
       // Refresh NFTs
       await fetchCollectionData();
 
       // Reset form
-      setTokenURI("");
-      setShowMintModal(false);
-      setTxHash(null);
+      setTimeout(() => {
+        setNftName("");
+        setNftDescription("");
+        setImageFile(null);
+        setImagePreview(null);
+        setAttributes([]);
+        setShowMintModal(false);
+        setTxHash(null);
+        setUploadProgress("");
+      }, 2000);
     } catch (err: any) {
+      console.error("Minting error:", err);
       setError(err.message || "Minting failed");
+      setUploadProgress("");
     } finally {
       setMinting(false);
     }
@@ -257,7 +335,6 @@ export default function CollectionDetailPage({
       const tx = await contract.burn(tokenId);
       await tx.wait();
 
-      // Refresh NFTs
       await fetchCollectionData();
     } catch (err: any) {
       alert(err.message || "Burn failed");
@@ -289,7 +366,6 @@ export default function CollectionDetailPage({
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Back Button */}
         <button
           onClick={() => window.history.back()}
           className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
@@ -384,19 +460,15 @@ export default function CollectionDetailPage({
                     key={nft.tokenId}
                     className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group"
                   >
-                    {/* NFT Image */}
                     <div className="aspect-square bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative overflow-hidden">
                       {nft.metadata?.image ? (
                         <Image
-                          src={
-                            nft.metadata.image.startsWith("ipfs://")
-                              ? nft.metadata.image.replace(
-                                  "ipfs://",
-                                  "https://ipfs.io/ipfs/"
-                                )
-                              : nft.metadata.image
+                          src={nft.metadata.image}
+                          alt={
+                            nft.metadata?.name
+                              ? String(nft.metadata.name)
+                              : `NFT #${nft.tokenId}`
                           }
-                          alt={nft.metadata?.name || `NFT #${nft.tokenId}`}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-300"
                           sizes="(max-width: 768px) 100vw, 33vw"
@@ -408,12 +480,10 @@ export default function CollectionDetailPage({
                         </div>
                       )}
 
-                      {/* Token ID Badge */}
                       <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-semibold">
                         #{nft.tokenId}
                       </div>
 
-                      {/* Owner Badge */}
                       {nft.owner.toLowerCase() === address?.toLowerCase() && (
                         <div className="absolute top-3 right-3 bg-green-500/90 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-semibold">
                           You Own
@@ -421,7 +491,6 @@ export default function CollectionDetailPage({
                       )}
                     </div>
 
-                    {/* NFT Info */}
                     <div className="p-4">
                       <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white truncate">
                         {nft.metadata?.name ||
@@ -433,6 +502,25 @@ export default function CollectionDetailPage({
                         </p>
                       )}
 
+                      {/* Attributes */}
+                      {nft.metadata?.attributes &&
+                        Array.isArray(nft.metadata.attributes) &&
+                        nft.metadata.attributes.length > 0 && (
+                          <div className="mb-3 flex flex-wrap gap-1">
+                            {nft.metadata.attributes
+                              .slice(0, 3)
+                              .map((attr: any, i) => (
+                                <span
+                                  key={i}
+                                  className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
+                                >
+                                  {String(attr.trait_type)}:{" "}
+                                  {String(attr.value)}
+                                </span>
+                              ))}
+                          </div>
+                        )}
+
                       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
                         <span>Owner:</span>
                         <span className="font-mono truncate">
@@ -442,14 +530,7 @@ export default function CollectionDetailPage({
 
                       <div className="flex gap-2">
                         <a
-                          href={
-                            nft.tokenURI.startsWith("ipfs://")
-                              ? nft.tokenURI.replace(
-                                  "ipfs://",
-                                  "https://ipfs.io/ipfs/"
-                                )
-                              : nft.tokenURI
-                          }
+                          href={nft.tokenURI}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
@@ -484,13 +565,14 @@ export default function CollectionDetailPage({
         )}
       </div>
 
-      {/* Mint Modal */}
+      {/* Enhanced Mint Modal */}
       {showMintModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative my-8">
             <button
-              onClick={() => setShowMintModal(false)}
+              onClick={() => !minting && setShowMintModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              disabled={minting}
             >
               ✕
             </button>
@@ -499,28 +581,159 @@ export default function CollectionDetailPage({
               Mint New NFT
             </h2>
 
-            <div className="space-y-6">
+            <form onSubmit={handleMint} className="space-y-6">
+              {/* Image Upload */}
               <div>
                 <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  Token URI / Metadata URL
+                  NFT Image *
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-purple-500 transition-colors">
+                  {imagePreview ? (
+                    <div className="relative">
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        width={256}
+                        height={256}
+                        className="max-h-64 mx-auto rounded-lg object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        disabled={minting}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer block">
+                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-600 dark:text-gray-400 mb-2">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        disabled={minting}
+                        required
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  NFT Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  value={nftName}
+                  onChange={(e) => setNftName(e.target.value)}
+                  placeholder="e.g., Cool NFT #1"
+                  disabled={minting}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Description
                 </label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                  value={tokenURI}
-                  onChange={(e) => setTokenURI(e.target.value)}
-                  placeholder="ipfs://... or https://..."
-                  rows={4}
+                  value={nftDescription}
+                  onChange={(e) => setNftDescription(e.target.value)}
+                  placeholder="Describe your NFT..."
+                  rows={3}
                   disabled={minting}
                 />
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Enter the IPFS or HTTP URL pointing to your NFT metadata JSON
-                </p>
               </div>
 
+              {/* Attributes */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Attributes / Traits
+                </label>
+
+                {/* Existing attributes */}
+                {attributes.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {attributes.map((attr, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg"
+                      >
+                        <span className="text-sm">
+                          <strong>{attr.trait_type}:</strong> {attr.value}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeAttribute(index)}
+                          className="text-red-500 hover:text-red-700"
+                          disabled={minting}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new attribute */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Trait type (e.g., Color)"
+                    value={newTraitType}
+                    onChange={(e) => setNewTraitType(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    disabled={minting}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value (e.g., Blue)"
+                    value={newTraitValue}
+                    onChange={(e) => setNewTraitValue(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    disabled={minting}
+                  />
+                  <button
+                    type="button"
+                    onClick={addAttribute}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                    disabled={minting || !newTraitType || !newTraitValue}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                  <p className="text-blue-800 dark:text-blue-200 text-sm">
+                    {uploadProgress}
+                  </p>
+                </div>
+              )}
+
+              {/* Submit Button */}
               <button
-                onClick={handleMint}
+                type="submit"
                 className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={minting || !tokenURI}
+                disabled={minting || !imageFile}
               >
                 {minting ? (
                   <>
@@ -534,7 +747,7 @@ export default function CollectionDetailPage({
                   </>
                 )}
               </button>
-            </div>
+            </form>
 
             {txHash && (
               <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">

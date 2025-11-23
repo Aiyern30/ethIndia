@@ -10,8 +10,16 @@ import {
   Loader2,
   Package,
   AlertCircle,
+  Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import {
+  uploadCollectionMetadata,
+  fetchCollectionMetadata,
+  CollectionMetadata,
+} from "@/lib/storage";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -35,7 +43,6 @@ const COLLECTION_FACTORY_ABI = [
   },
 ];
 
-// Minimal ERC721 ABI to get collection details
 const ERC721_ABI = [
   {
     inputs: [],
@@ -65,20 +72,78 @@ interface Collection {
   name: string;
   symbol: string;
   nftCount: string;
+  metadata?: CollectionMetadata;
 }
+
+// Storage key for collection metadata mapping
+const COLLECTION_METADATA_KEY = "collection_metadata_";
 
 export default function MyCollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Form state
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
+  const [description, setDescription] = useState("");
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
+    null
+  );
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
+  const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(
+    null
+  );
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+
   const [creating, setCreating] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const signer = useSigner();
   const address = useAddress();
+
+  // Handle profile image selection
+  const handleProfileImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle banner image selection
+  const handleBannerImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Add tag
+  const addTag = () => {
+    if (newTag && !tags.includes(newTag.toLowerCase())) {
+      setTags([...tags, newTag.toLowerCase()]);
+      setNewTag("");
+    }
+  };
+
+  // Remove tag
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
 
   // Fetch collections
   const fetchCollections = useCallback(async () => {
@@ -110,11 +175,26 @@ export default function MyCollectionsPage() {
             collectionContract.symbol(),
             collectionContract.balanceOf(address),
           ]);
+
+          // Try to fetch metadata from localStorage
+          let metadata: CollectionMetadata | undefined;
+          try {
+            const storedMetadataUri = localStorage.getItem(
+              `${COLLECTION_METADATA_KEY}${addr}`
+            );
+            if (storedMetadataUri) {
+              metadata = await fetchCollectionMetadata(storedMetadataUri);
+            }
+          } catch (err) {
+            console.log("No metadata found for collection", addr);
+          }
+
           return {
             address: addr,
             name,
             symbol,
             nftCount: balance.toString(),
+            metadata,
           };
         })
       );
@@ -133,12 +213,20 @@ export default function MyCollectionsPage() {
 
   async function handleCreateCollection(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!profileImageFile || !bannerImageFile) {
+      setError("Please upload both profile and banner images");
+      return;
+    }
+
     setCreating(true);
     setError(null);
     setTxHash(null);
+    setUploadProgress("Creating collection...");
 
     try {
       if (!signer) throw new Error("Wallet not connected");
+      if (!address) throw new Error("Address not found");
 
       const contract = new ethers.Contract(
         COLLECTION_FACTORY_ADDRESS,
@@ -146,20 +234,66 @@ export default function MyCollectionsPage() {
         signer
       );
 
+      // Create collection on-chain first
+      setUploadProgress("Deploying collection contract...");
       const tx = await contract.createCollection(name, symbol);
       setTxHash(tx.hash);
-      await tx.wait();
+
+      const receipt = await tx.wait();
+
+      // Get the collection address from the event
+      const event = receipt.events?.find(
+        (e: any) => e.event === "CollectionCreated"
+      );
+      const collectionAddress = event?.args?.collection;
+
+      if (!collectionAddress) {
+        throw new Error("Failed to get collection address from transaction");
+      }
+
+      // Upload metadata to IPFS
+      setUploadProgress("Uploading collection metadata to IPFS...");
+      const { metadataUri } = await uploadCollectionMetadata({
+        name,
+        symbol,
+        description,
+        profileImageFile,
+        bannerImageFile,
+        tags,
+        contractAddress: collectionAddress,
+        totalSupply: 0,
+        creatorWallet: address,
+      });
+
+      // Store metadata URI in localStorage for future reference
+      localStorage.setItem(
+        `${COLLECTION_METADATA_KEY}${collectionAddress}`,
+        metadataUri
+      );
+
+      setUploadProgress("Collection created successfully!");
 
       // Refresh collections
       await fetchCollections();
 
       // Reset form
-      setName("");
-      setSymbol("");
-      setShowCreateModal(false);
-      setTxHash(null);
+      setTimeout(() => {
+        setName("");
+        setSymbol("");
+        setDescription("");
+        setProfileImageFile(null);
+        setProfileImagePreview(null);
+        setBannerImageFile(null);
+        setBannerImagePreview(null);
+        setTags([]);
+        setShowCreateModal(false);
+        setTxHash(null);
+        setUploadProgress("");
+      }, 2000);
     } catch (err: any) {
+      console.error("Creation error:", err);
       setError(err.message || "Transaction failed");
+      setUploadProgress("");
     } finally {
       setCreating(false);
     }
@@ -232,23 +366,68 @@ export default function MyCollectionsPage() {
                 className="cursor-pointer"
               >
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-200 dark:border-gray-700 group">
-                  {/* linear Header */}
-                  <div className="h-32 bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative">
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                  {/* Banner Header */}
+                  <div className="h-32 relative overflow-hidden">
+                    {collection.metadata?.bannerImage ? (
+                      <Image
+                        src={collection.metadata.bannerImage}
+                        alt={collection.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    ) : (
+                      <div className="h-full bg-linear-to-br from-purple-500 via-pink-500 to-blue-500">
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
                   <div className="p-6 -mt-8 relative">
-                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center mb-4 border-4 border-white dark:border-gray-800">
-                      <Package className="w-8 h-8 text-purple-600" />
+                    {/* Profile Image */}
+                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center mb-4 border-4 border-white dark:border-gray-800 relative overflow-hidden">
+                      {collection.metadata?.profileImage ? (
+                        <Image
+                          src={collection.metadata.profileImage}
+                          alt={collection.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <Package className="w-8 h-8 text-purple-600" />
+                      )}
                     </div>
 
                     <h3 className="text-xl font-bold mb-1 text-gray-900 dark:text-white">
                       {collection.name}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                       {collection.symbol}
                     </p>
+
+                    {/* Description */}
+                    {collection.metadata?.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                        {collection.metadata.description}
+                      </p>
+                    )}
+
+                    {/* Tags */}
+                    {collection.metadata?.tags &&
+                      collection.metadata.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {collection.metadata.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                     <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                       <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -263,6 +442,7 @@ export default function MyCollectionsPage() {
                       href={`https://sepolia.etherscan.io/address/${collection.address}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center justify-center gap-2 w-full py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -276,13 +456,14 @@ export default function MyCollectionsPage() {
         )}
       </div>
 
-      {/* Create Collection Modal */}
+      {/* Enhanced Create Collection Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative my-8">
             <button
-              onClick={() => setShowCreateModal(false)}
+              onClick={() => !creating && setShowCreateModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              disabled={creating}
             >
               ✕
             </button>
@@ -292,9 +473,98 @@ export default function MyCollectionsPage() {
             </h2>
 
             <form onSubmit={handleCreateCollection} className="space-y-6">
+              {/* Banner Image */}
               <div>
                 <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  Collection Name
+                  Banner Image * (Recommended: 1500x500px)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:border-purple-500 transition-colors">
+                  {bannerImagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={bannerImagePreview}
+                        alt="Banner Preview"
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBannerImageFile(null);
+                          setBannerImagePreview(null);
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        disabled={creating}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer block">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Upload banner image
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerImageSelect}
+                        className="hidden"
+                        disabled={creating}
+                        required
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Profile Image */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Profile Image * (Recommended: 350x350px)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:border-purple-500 transition-colors">
+                  {profileImagePreview ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={profileImagePreview}
+                        alt="Profile Preview"
+                        className="w-24 h-24 object-cover rounded-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileImageFile(null);
+                          setProfileImagePreview(null);
+                        }}
+                        className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        disabled={creating}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer block">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Upload profile image
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfileImageSelect}
+                        className="hidden"
+                        disabled={creating}
+                        required
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Collection Name *
                 </label>
                 <input
                   type="text"
@@ -307,9 +577,10 @@ export default function MyCollectionsPage() {
                 />
               </div>
 
+              {/* Symbol */}
               <div>
                 <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  Symbol
+                  Symbol *
                 </label>
                 <input
                   type="text"
@@ -322,10 +593,89 @@ export default function MyCollectionsPage() {
                 />
               </div>
 
+              {/* Description */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <textarea
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your collection..."
+                  rows={3}
+                  disabled={creating}
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Tags / Categories
+                </label>
+
+                {tags.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="hover:text-purple-900 dark:hover:text-purple-100"
+                          disabled={creating}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g., art, pfp, gaming"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    disabled={creating}
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                    disabled={creating || !newTag}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                  <p className="text-blue-800 dark:text-blue-200 text-sm">
+                    {uploadProgress}
+                  </p>
+                </div>
+              )}
+
+              {/* Submit Button */}
               <button
                 type="submit"
                 className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={creating || !address}
+                disabled={
+                  creating ||
+                  !address ||
+                  !name ||
+                  !symbol ||
+                  !profileImageFile ||
+                  !bannerImageFile
+                }
               >
                 {creating ? (
                   <>

@@ -20,6 +20,13 @@ import {
   fetchCollectionMetadata,
   CollectionMetadata,
 } from "@/lib/storage";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -457,22 +464,28 @@ export default function MyCollectionsPage() {
       </div>
 
       {/* Enhanced Create Collection Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative my-8">
-            <button
-              onClick={() => !creating && setShowCreateModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              disabled={creating}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-2xl w-full p-0 flex flex-col max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="bg-white dark:bg-gray-900 px-8 pt-8 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Create New Collection
+                </span>
+              </DialogTitle>
+              <DialogDescription>
+                {/* Optionally add a description here */}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <form
+              id="create-collection-form"
+              onSubmit={handleCreateCollection}
+              className="space-y-6"
             >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-6 bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Create New Collection
-            </h2>
-
-            <form onSubmit={handleCreateCollection} className="space-y-6">
               {/* Banner Image */}
               <div>
                 <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
@@ -668,61 +681,72 @@ export default function MyCollectionsPage() {
                 </div>
               )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={
-                  creating ||
-                  !address ||
-                  !name ||
-                  !symbol ||
-                  !profileImageFile ||
-                  !bannerImageFile
-                }
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    Create Collection
-                  </>
-                )}
-              </button>
+              {/* Transaction hash and error display */}
+              {txHash && (
+                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                  <p className="text-green-800 dark:text-green-200 text-sm font-medium mb-2">
+                    Transaction sent!
+                  </p>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm hover:underline"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    View on Etherscan
+                  </a>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-red-800 dark:text-red-200 text-sm">
+                    {error}
+                  </p>
+                </div>
+              )}
             </form>
-
-            {txHash && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                <p className="text-green-800 dark:text-green-200 text-sm font-medium mb-2">
-                  Transaction sent!
-                </p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm hover:underline"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View on Etherscan
-                </a>
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                <p className="text-red-800 dark:text-red-200 text-sm">
-                  {error}
-                </p>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+          {/* Fixed Submit Button */}
+          <div className="bg-white dark:bg-gray-900 px-8 pb-8 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <button
+              type="submit"
+              form="create-collection-form"
+              className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={
+                creating ||
+                !address ||
+                !name ||
+                !symbol ||
+                !profileImageFile ||
+                !bannerImageFile
+              }
+              onClick={() => {
+                const form = document.getElementById(
+                  "create-collection-form"
+                ) as HTMLFormElement;
+                if (form) {
+                  form.requestSubmit();
+                }
+              }}
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Create Collection
+                </>
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

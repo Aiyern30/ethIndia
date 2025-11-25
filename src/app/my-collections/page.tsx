@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { resolveIPFS } from "@/lib/utils";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -247,38 +248,85 @@ export default function MyCollectionsPage() {
       setTxHash(tx.hash);
 
       const receipt = await tx.wait();
+      console.log("Transaction receipt:", receipt);
 
-      // Get the collection address from the event
-      const event = receipt.events?.find(
-        (e: any) => e.event === "CollectionCreated"
-      );
-      const collectionAddress = event?.args?.collection;
+      // Try multiple methods to get collection address
+      let collectionAddress = null;
+
+      // Method 1: Parse events with interface
+      try {
+        const iface = new ethers.utils.Interface(COLLECTION_FACTORY_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed.name === "CollectionCreated") {
+              collectionAddress = parsed.args.collection;
+              console.log("Found collection address from event:", collectionAddress);
+              break;
+            }
+          } catch {
+            // Skip logs that don't match our interface
+            continue;
+          }
+        }
+      } catch (err) {
+        console.log("Method 1 failed:", err);
+      }
+
+      // Method 2: Call getUserCollections to get latest
+      if (!collectionAddress) {
+        console.log("Trying method 2: getUserCollections");
+        try {
+          const collections = await contract.getUserCollections(address);
+          if (collections && collections.length > 0) {
+            collectionAddress = collections[collections.length - 1];
+            console.log("Found collection address from getUserCollections:", collectionAddress);
+          }
+        } catch (err) {
+          console.log("Method 2 failed:", err);
+        }
+      }
 
       if (!collectionAddress) {
-        throw new Error("Failed to get collection address from transaction");
+        throw new Error("Failed to get collection address from transaction. Please check Etherscan for the deployed contract.");
       }
 
       // Upload metadata to IPFS
       setUploadProgress("Uploading collection metadata to IPFS...");
-      const { metadataUri } = await uploadCollectionMetadata({
-        name,
-        symbol,
-        description,
-        profileImageFile,
-        bannerImageFile,
-        tags,
-        contractAddress: collectionAddress,
-        totalSupply: 0,
-        creatorWallet: address,
-      });
+      console.log("Uploading metadata for collection:", collectionAddress);
+      
+      try {
+        const { metadataUri } = await uploadCollectionMetadata({
+          name,
+          symbol,
+          description,
+          profileImageFile,
+          bannerImageFile,
+          tags,
+          contractAddress: collectionAddress,
+          totalSupply: 0,
+          creatorWallet: address,
+        });
 
-      // Store metadata URI in localStorage for future reference
-      localStorage.setItem(
-        `${COLLECTION_METADATA_KEY}${collectionAddress}`,
-        metadataUri
-      );
+        console.log("Metadata uploaded successfully:", metadataUri);
 
-      setUploadProgress("Collection created successfully!");
+        // Store metadata URI in localStorage for future reference
+        localStorage.setItem(
+          `${COLLECTION_METADATA_KEY}${collectionAddress}`,
+          metadataUri
+        );
+
+        setUploadProgress("Collection created successfully!");
+      } catch (uploadError: any) {
+        console.error("Metadata upload error:", uploadError);
+        setError(`Collection deployed but metadata upload failed: ${uploadError.message}. Collection address: ${collectionAddress}`);
+        
+        // Still store the collection address even if metadata upload fails
+        localStorage.setItem(
+          `${COLLECTION_METADATA_KEY}${collectionAddress}`,
+          "metadata_upload_failed"
+        );
+      }
 
       // Refresh collections
       await fetchCollections();
@@ -296,7 +344,8 @@ export default function MyCollectionsPage() {
         setShowCreateModal(false);
         setTxHash(null);
         setUploadProgress("");
-      }, 2000);
+        setError(null);
+      }, 3000);
     } catch (err: any) {
       console.error("Creation error:", err);
       setError(err.message || "Transaction failed");
@@ -377,7 +426,7 @@ export default function MyCollectionsPage() {
                   <div className="h-32 relative overflow-hidden">
                     {collection.metadata?.bannerImage ? (
                       <Image
-                        src={collection.metadata.bannerImage}
+                        src={resolveIPFS(collection.metadata.bannerImage)}
                         alt={collection.name}
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -396,7 +445,7 @@ export default function MyCollectionsPage() {
                     <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center mb-4 border-4 border-white dark:border-gray-800 relative overflow-hidden">
                       {collection.metadata?.profileImage ? (
                         <Image
-                          src={collection.metadata.profileImage}
+                          src={resolveIPFS(collection.metadata.profileImage)}
                           alt={collection.name}
                           fill
                           className="object-cover"

@@ -20,6 +20,7 @@ import {
   fetchNFTMetadata,
   uploadNFTMetadata,
 } from "@/lib/storage";
+import { resolveIPFS } from "@/lib/utils";
 
 interface CollectionDetailProps {
   collectionAddress: string;
@@ -463,7 +464,7 @@ export default function CollectionDetailPage({
                     <div className="aspect-square bg-linear-to-br from-purple-500 via-pink-500 to-blue-500 relative overflow-hidden">
                       {nft.metadata?.image ? (
                         <Image
-                          src={nft.metadata.image}
+                          src={resolveIPFS(nft.metadata.image)}
                           alt={
                             nft.metadata?.name
                               ? String(nft.metadata.name)

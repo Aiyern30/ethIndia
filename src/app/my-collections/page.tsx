@@ -261,7 +261,10 @@ export default function MyCollectionsPage() {
             const parsed = iface.parseLog(log);
             if (parsed.name === "CollectionCreated") {
               collectionAddress = parsed.args.collection;
-              console.log("Found collection address from event:", collectionAddress);
+              console.log(
+                "Found collection address from event:",
+                collectionAddress
+              );
               break;
             }
           } catch {
@@ -280,7 +283,10 @@ export default function MyCollectionsPage() {
           const collections = await contract.getUserCollections(address);
           if (collections && collections.length > 0) {
             collectionAddress = collections[collections.length - 1];
-            console.log("Found collection address from getUserCollections:", collectionAddress);
+            console.log(
+              "Found collection address from getUserCollections:",
+              collectionAddress
+            );
           }
         } catch (err) {
           console.log("Method 2 failed:", err);
@@ -288,13 +294,15 @@ export default function MyCollectionsPage() {
       }
 
       if (!collectionAddress) {
-        throw new Error("Failed to get collection address from transaction. Please check Etherscan for the deployed contract.");
+        throw new Error(
+          "Failed to get collection address from transaction. Please check Etherscan for the deployed contract."
+        );
       }
 
       // Upload metadata to IPFS
       setUploadProgress("Uploading collection metadata to IPFS...");
       console.log("Uploading metadata for collection:", collectionAddress);
-      
+
       try {
         const { metadataUri } = await uploadCollectionMetadata({
           name,
@@ -319,8 +327,10 @@ export default function MyCollectionsPage() {
         setUploadProgress("Collection created successfully!");
       } catch (uploadError: any) {
         console.error("Metadata upload error:", uploadError);
-        setError(`Collection deployed but metadata upload failed: ${uploadError.message}. Collection address: ${collectionAddress}`);
-        
+        setError(
+          `Collection deployed but metadata upload failed: ${uploadError.message}. Collection address: ${collectionAddress}`
+        );
+
         // Still store the collection address even if metadata upload fails
         localStorage.setItem(
           `${COLLECTION_METADATA_KEY}${collectionAddress}`,

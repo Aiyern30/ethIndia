@@ -21,6 +21,13 @@ import {
   uploadNFTMetadata,
 } from "@/lib/storage";
 import { resolveIPFS } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 interface CollectionDetailProps {
   collectionAddress: string;
@@ -566,190 +573,178 @@ export default function CollectionDetailPage({
         )}
       </div>
 
-      {/* Enhanced Mint Modal */}
-      {showMintModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative my-8">
-            <button
-              onClick={() => !minting && setShowMintModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              disabled={minting}
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-6 bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+      {/* Enhanced Mint Modal using Shadcn Dialog */}
+      <Dialog open={showMintModal} onOpenChange={setShowMintModal}>
+        <DialogContent className="max-w-2xl w-full p-0 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col h-[80vh] relative">
+          {/* Sticky Header */}
+          <DialogHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900 pt-8 pb-4 px-8">
+            <DialogTitle className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Mint New NFT
-            </h2>
+            </DialogTitle>
+            <DialogClose
+              asChild
+              disabled={minting}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <button aria-label="Close">✕</button>
+            </DialogClose>
+          </DialogHeader>
 
-            <form onSubmit={handleMint} className="space-y-6">
-              {/* Image Upload */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  NFT Image *
-                </label>
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-purple-500 transition-colors">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <Image
-                        src={imagePreview}
-                        alt="Preview"
-                        width={256}
-                        height={256}
-                        className="max-h-64 mx-auto rounded-lg object-contain"
-                      />
+          {/* Scrollable Content */}
+          <form
+            onSubmit={handleMint}
+            className="flex-1 overflow-y-auto space-y-6 px-8 pb-6"
+            style={{ minHeight: 0 }}
+            id="mint-nft-form"
+          >
+            {/* Image Upload */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                NFT Image *
+              </label>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-purple-500 transition-colors">
+                {imagePreview ? (
+                  <div className="relative">
+                    <Image
+                      src={imagePreview}
+                      alt="Preview"
+                      width={256}
+                      height={256}
+                      className="max-h-64 mx-auto rounded-lg object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      disabled={minting}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer block">
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      disabled={minting}
+                      required
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                NFT Name (Optional)
+              </label>
+              <input
+                type="text"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                value={nftName}
+                onChange={(e) => setNftName(e.target.value)}
+                placeholder="e.g., Cool NFT #1"
+                disabled={minting}
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                Description
+              </label>
+              <textarea
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                value={nftDescription}
+                onChange={(e) => setNftDescription(e.target.value)}
+                placeholder="Describe your NFT..."
+                rows={3}
+                disabled={minting}
+              />
+            </div>
+
+            {/* Attributes */}
+            <div>
+              <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                Attributes / Traits
+              </label>
+
+              {/* Existing attributes */}
+              {attributes.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {attributes.map((attr, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg"
+                    >
+                      <span className="text-sm">
+                        <strong>{attr.trait_type}:</strong> {attr.value}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        onClick={() => removeAttribute(index)}
+                        className="text-red-500 hover:text-red-700"
                         disabled={minting}
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                  ) : (
-                    <label className="cursor-pointer block">
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-gray-600 dark:text-gray-400 mb-2">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                        disabled={minting}
-                        required
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              {/* Name */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  NFT Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  value={nftName}
-                  onChange={(e) => setNftName(e.target.value)}
-                  placeholder="e.g., Cool NFT #1"
-                  disabled={minting}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  Description
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                  value={nftDescription}
-                  onChange={(e) => setNftDescription(e.target.value)}
-                  placeholder="Describe your NFT..."
-                  rows={3}
-                  disabled={minting}
-                />
-              </div>
-
-              {/* Attributes */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-                  Attributes / Traits
-                </label>
-
-                {/* Existing attributes */}
-                {attributes.length > 0 && (
-                  <div className="mb-3 space-y-2">
-                    {attributes.map((attr, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg"
-                      >
-                        <span className="text-sm">
-                          <strong>{attr.trait_type}:</strong> {attr.value}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeAttribute(index)}
-                          className="text-red-500 hover:text-red-700"
-                          disabled={minting}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add new attribute */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    placeholder="Trait type (e.g., Color)"
-                    value={newTraitType}
-                    onChange={(e) => setNewTraitType(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    disabled={minting}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Value (e.g., Blue)"
-                    value={newTraitValue}
-                    onChange={(e) => setNewTraitValue(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    disabled={minting}
-                  />
-                  <button
-                    type="button"
-                    onClick={addAttribute}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                    disabled={minting || !newTraitType || !newTraitValue}
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              {/* Upload Progress */}
-              {uploadProgress && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                  <p className="text-blue-800 dark:text-blue-200 text-sm">
-                    {uploadProgress}
-                  </p>
+                  ))}
                 </div>
               )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={minting || !imageFile}
-              >
-                {minting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Minting...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    Mint NFT
-                  </>
-                )}
-              </button>
-            </form>
+              {/* Add new attribute */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="Trait type (e.g., Color)"
+                  value={newTraitType}
+                  onChange={(e) => setNewTraitType(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  disabled={minting}
+                />
+                <input
+                  type="text"
+                  placeholder="Value (e.g., Blue)"
+                  value={newTraitValue}
+                  onChange={(e) => setNewTraitValue(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  disabled={minting}
+                />
+                <button
+                  type="button"
+                  onClick={addAttribute}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  disabled={minting || !newTraitType || !newTraitValue}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
 
+            {/* Upload Progress */}
+            {uploadProgress && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-blue-800 dark:text-blue-200 text-sm">
+                  {uploadProgress}
+                </p>
+              </div>
+            )}
+
+            {/* Transaction hash and error messages */}
             {txHash && (
               <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                 <p className="text-green-800 dark:text-green-200 text-sm font-medium mb-2">
@@ -775,9 +770,31 @@ export default function CollectionDetailPage({
                 </p>
               </div>
             )}
+          </form>
+
+          {/* Sticky Footer */}
+          <div className="sticky bottom-0 z-10 bg-white dark:bg-gray-900 pb-8 pt-4 px-8">
+            <button
+              type="submit"
+              form="mint-nft-form"
+              className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={minting || !imageFile}
+            >
+              {minting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Minting...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Mint NFT
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

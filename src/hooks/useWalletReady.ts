@@ -1,4 +1,8 @@
-import { useAddress, useSigner, useConnectionStatus } from "@thirdweb-dev/react";
+import {
+  useAddress,
+  useSigner,
+  useConnectionStatus,
+} from "@thirdweb-dev/react";
 import { useMemo } from "react";
 
 export function useWalletReady() {
@@ -8,7 +12,9 @@ export function useWalletReady() {
 
   // Derive ready state instead of using useState + useEffect
   const isReady = useMemo(() => {
-    return connectionStatus === "connected" || connectionStatus === "disconnected";
+    return (
+      connectionStatus === "connected" || connectionStatus === "disconnected"
+    );
   }, [connectionStatus]);
 
   return {

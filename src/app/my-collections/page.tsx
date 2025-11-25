@@ -86,6 +86,49 @@ interface Collection {
 // Storage key for collection metadata mapping
 const COLLECTION_METADATA_KEY = "collection_metadata_";
 
+function CollectionSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
+      {/* Banner Skeleton */}
+      <div className="h-32 bg-linear-to-br from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700" />
+
+      {/* Content Skeleton */}
+      <div className="p-6 -mt-8 relative">
+        {/* Profile Image Skeleton */}
+        <div className="w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-xl shadow-lg mb-4 border-4 border-white dark:border-gray-800" />
+
+        {/* Title Skeleton */}
+        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2" />
+
+        {/* Symbol Skeleton */}
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4" />
+
+        {/* Description Skeleton */}
+        <div className="space-y-2 mb-4">
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+        </div>
+
+        {/* Tags Skeleton */}
+        <div className="flex gap-2 mb-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16" />
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20" />
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-14" />
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+          <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-12" />
+        </div>
+
+        {/* Button Skeleton */}
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-full" />
+      </div>
+    </div>
+  );
+}
+
 export default function MyCollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -368,7 +411,27 @@ export default function MyCollectionsPage() {
 
   // Show nothing while checking wallet status
   if (!isReady) {
-    return null;
+    return (
+      <div className="min-h-screen bg-linear-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded w-64 mb-2 animate-pulse" />
+              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse" />
+            </div>
+            <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded-xl w-48 animate-pulse" />
+          </div>
+
+          {/* Collections Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <CollectionSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!address) {
@@ -409,8 +472,10 @@ export default function MyCollectionsPage() {
 
         {/* Collections Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-purple-600" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <CollectionSkeleton key={index} />
+            ))}
           </div>
         ) : collections.length === 0 ? (
           <div className="text-center py-20">

@@ -118,6 +118,37 @@ interface CollectionInfo {
   totalSupply: number;
 }
 
+// Add NFT Card Skeleton Component
+function NFTCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
+      {/* Image Skeleton */}
+      <div className="aspect-square bg-linear-to-br from-purple-300 via-pink-300 to-blue-300 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800" />
+
+      {/* Content Skeleton */}
+      <div className="p-4">
+        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2" />
+        <div className="space-y-2 mb-3">
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+        </div>
+        <div className="flex gap-1 mb-3">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20" />
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-24" />
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+          <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CollectionDetailPage({
   collectionAddress,
 }: CollectionDetailProps) {
@@ -368,9 +399,38 @@ export default function CollectionDetailPage({
     (nft) => nft.owner.toLowerCase() === address?.toLowerCase()
   );
 
-  // Show nothing while checking wallet status
+  // Show skeleton while checking wallet status
   if (!isReady) {
-    return null;
+    return (
+      <div className="min-h-screen bg-linear-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Back Button Skeleton */}
+          <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-48 mb-6 animate-pulse" />
+
+          <div className="space-y-8">
+            {/* Collection Header Skeleton */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 animate-pulse">
+              <div className="space-y-4">
+                <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded w-1/3" />
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                <div className="flex gap-4">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                </div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+              </div>
+            </div>
+
+            {/* NFTs Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <NFTCardSkeleton key={index} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!address) {
@@ -399,8 +459,26 @@ export default function CollectionDetailPage({
         </button>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-purple-600" />
+          <div className="space-y-8">
+            {/* Collection Header Skeleton */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 animate-pulse">
+              <div className="space-y-4">
+                <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded w-1/3" />
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                <div className="flex gap-4">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                </div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+              </div>
+            </div>
+
+            {/* NFTs Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <NFTCardSkeleton key={index} />
+              ))}
+            </div>
           </div>
         ) : collectionInfo ? (
           <>

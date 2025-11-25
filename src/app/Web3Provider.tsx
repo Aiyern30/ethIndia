@@ -15,6 +15,12 @@ export default function Web3Provider({
         activeChain={Sepolia}
         clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
         supportedChains={[Sepolia]}
+        autoConnect={true}
+        dAppMeta={{
+          name: "NFT Platform",
+          description: "Create and manage NFT collections",
+          url: typeof window !== "undefined" ? window.location.origin : "",
+        }}
       >
         {children as any}
       </ThirdwebProvider>

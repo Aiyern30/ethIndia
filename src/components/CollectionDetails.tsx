@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { NFTMetadata, useAddress, useSigner } from "@thirdweb-dev/react";
+import { NFTMetadata } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
   Plus,
@@ -39,6 +39,7 @@ import {
   AlertDialogAction,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
+import { useWalletReady } from "@/hooks/useWalletReady";
 
 interface CollectionDetailProps {
   collectionAddress: string;
@@ -144,8 +145,7 @@ export default function CollectionDetailPage({
   const [burnDialogOpen, setBurnDialogOpen] = useState(false);
   const [burnTokenId, setBurnTokenId] = useState<string | null>(null);
 
-  const signer = useSigner();
-  const address = useAddress();
+  const { address, signer, isReady, isConnected } = useWalletReady();
 
   // Handle image file selection
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,8 +248,12 @@ export default function CollectionDetailPage({
   }, [signer, collectionAddress]);
 
   useEffect(() => {
-    fetchCollectionData();
-  }, [fetchCollectionData]);
+    if (isReady && isConnected) {
+      fetchCollectionData();
+    } else if (isReady && !isConnected) {
+      setLoading(false);
+    }
+  }, [fetchCollectionData, isReady, isConnected]);
 
   // Handle mint with Thirdweb Storage
   async function handleMint(e: React.FormEvent) {
@@ -363,6 +367,11 @@ export default function CollectionDetailPage({
   const myNFTs = nfts.filter(
     (nft) => nft.owner.toLowerCase() === address?.toLowerCase()
   );
+
+  // Show nothing while checking wallet status
+  if (!isReady) {
+    return null;
+  }
 
   if (!address) {
     return (

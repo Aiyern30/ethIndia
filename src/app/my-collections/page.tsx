@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAddress, useSigner } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
   Plus,
@@ -28,6 +27,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { resolveIPFS } from "@/lib/utils";
+import { useWalletReady } from "@/hooks/useWalletReady";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -88,7 +88,7 @@ const COLLECTION_METADATA_KEY = "collection_metadata_";
 
 export default function MyCollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Form state
@@ -111,8 +111,7 @@ export default function MyCollectionsPage() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const signer = useSigner();
-  const address = useAddress();
+  const { address, signer, isReady, isConnected } = useWalletReady();
 
   // Handle profile image selection
   const handleProfileImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,8 +215,10 @@ export default function MyCollectionsPage() {
   }, [signer, address]);
 
   useEffect(() => {
-    fetchCollections();
-  }, [fetchCollections]);
+    if (isReady && isConnected) {
+      fetchCollections();
+    }
+  }, [fetchCollections, isReady, isConnected]);
 
   async function handleCreateCollection(e: React.FormEvent) {
     e.preventDefault();
@@ -363,6 +364,11 @@ export default function MyCollectionsPage() {
     } finally {
       setCreating(false);
     }
+  }
+
+  // Show nothing while checking wallet status
+  if (!isReady) {
+    return null;
   }
 
   if (!address) {

@@ -196,7 +196,7 @@ export default function CollectionDetailPage({
   const addAttribute = () => {
     if (newTraitType && newTraitValue) {
       setAttributes([
-// ...existing code...
+        // ...existing code...
         { trait_type: newTraitType, value: newTraitValue },
       ]);
       setNewTraitType("");

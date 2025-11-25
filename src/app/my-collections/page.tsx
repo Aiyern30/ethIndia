@@ -22,7 +22,7 @@ import { resolveIPFS } from "@/lib/utils";
 import { useWalletReady } from "@/hooks/useWalletReady";
 import { toast } from "sonner";
 
-const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
+const COLLECTION_FACTORY_ADDRESS = "0xd6EDC0B4A29B5Dd81ff85EfBf1314a8C7274779e";
 
 const COLLECTION_FACTORY_ABI = [
   {

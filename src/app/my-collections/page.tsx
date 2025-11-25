@@ -3,15 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import {
-  Plus,
-  ExternalLink,
-  Loader2,
-  Package,
-  AlertCircle,
-  Upload,
-  X,
-} from "lucide-react";
+import { Plus, ExternalLink, Loader2, Package, Upload, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -28,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { resolveIPFS } from "@/lib/utils";
 import { useWalletReady } from "@/hooks/useWalletReady";
+import { toast } from "sonner";
 
 const COLLECTION_FACTORY_ADDRESS = "0x0C1d41D31c23759b8e9F59ac58289e9AfbAA5835";
 
@@ -152,7 +145,6 @@ export default function MyCollectionsPage() {
   const [creating, setCreating] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [txHash, setTxHash] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const { address, signer, isReady, isConnected } = useWalletReady();
 
@@ -250,8 +242,8 @@ export default function MyCollectionsPage() {
       );
 
       setCollections(collectionsData);
-    } catch (err) {
-      console.error("Error fetching collections:", err);
+    } catch {
+      toast.error("Error fetching collections");
     } finally {
       setLoading(false);
     }
@@ -267,12 +259,11 @@ export default function MyCollectionsPage() {
     e.preventDefault();
 
     if (!profileImageFile || !bannerImageFile) {
-      setError("Please upload both profile and banner images");
+      toast.error("Please upload both profile and banner images");
       return;
     }
 
     setCreating(true);
-    setError(null);
     setTxHash(null);
     setUploadProgress("Creating collection...");
 
@@ -370,10 +361,7 @@ export default function MyCollectionsPage() {
 
         setUploadProgress("Collection created successfully!");
       } catch (uploadError: any) {
-        console.error("Metadata upload error:", uploadError);
-        setError(
-          `Collection deployed but metadata upload failed: ${uploadError.message}. Collection address: ${collectionAddress}`
-        );
+        toast.error(`Metadata upload failed: ${uploadError.message}`);
 
         // Still store the collection address even if metadata upload fails
         localStorage.setItem(
@@ -398,11 +386,13 @@ export default function MyCollectionsPage() {
         setShowCreateModal(false);
         setTxHash(null);
         setUploadProgress("");
-        setError(null);
       }, 3000);
     } catch (err: any) {
-      console.error("Creation error:", err);
-      setError(err.message || "Transaction failed");
+      if (err?.code === 4001) {
+        toast.error("Transaction rejected by user.");
+      } else {
+        toast.error(err.message || "Transaction failed");
+      }
       setUploadProgress("");
     } finally {
       setCreating(false);
@@ -826,15 +816,6 @@ export default function MyCollectionsPage() {
                     <ExternalLink className="w-4 h-4" />
                     View on Etherscan
                   </a>
-                </div>
-              )}
-
-              {error && (
-                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-red-800 dark:text-red-200 text-sm">
-                    {error}
-                  </p>
                 </div>
               )}
             </form>

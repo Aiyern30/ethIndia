@@ -40,6 +40,7 @@ import {
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
 import { useWalletReady } from "@/hooks/useWalletReady";
+import { toast } from "sonner";
 
 interface CollectionDetailProps {
   collectionAddress: string;
@@ -195,7 +196,7 @@ export default function CollectionDetailPage({
   const addAttribute = () => {
     if (newTraitType && newTraitValue) {
       setAttributes([
-        ...attributes,
+// ...existing code...
         { trait_type: newTraitType, value: newTraitValue },
       ]);
       setNewTraitType("");
@@ -291,6 +292,7 @@ export default function CollectionDetailPage({
     e.preventDefault();
 
     if (!imageFile) {
+      toast.error("Please select an image");
       setError("Please select an image");
       return;
     }
@@ -364,8 +366,13 @@ export default function CollectionDetailPage({
         setUploadProgress("");
       }, 2000);
     } catch (err: any) {
-      console.error("Minting error:", err);
-      setError(err.message || "Minting failed");
+      if (err?.code === 4001) {
+        toast.error("Transaction rejected by user.");
+        setError("Transaction rejected by user.");
+      } else {
+        toast.error(err.message || "Minting failed");
+        setError(err.message || "Minting failed");
+      }
       setUploadProgress("");
     } finally {
       setMinting(false);
@@ -387,7 +394,11 @@ export default function CollectionDetailPage({
 
       await fetchCollectionData();
     } catch (err: any) {
-      alert(err.message || "Burn failed");
+      if (err?.code === 4001) {
+        toast.error("Transaction rejected by user.");
+      } else {
+        toast.error(err.message || "Burn failed");
+      }
     }
   }
 

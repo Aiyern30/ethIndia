@@ -4,6 +4,7 @@ import Web3Provider from "./Web3Provider";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import { useState } from "react";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -22,6 +23,7 @@ export default function RootLayout({
           />
           <main className="pt-18 sm:pt-[100px]">{children}</main>
           <Footer />
+          <Toaster richColors position="top-right" />
         </Web3Provider>
       </body>
     </html>

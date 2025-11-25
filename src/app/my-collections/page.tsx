@@ -350,7 +350,9 @@ export default function MyCollectionsPage() {
       setUploadProgress("Storing metadata on-chain...");
       const COLLECTION_ABI_WITH_METADATA = [
         {
-          inputs: [{ internalType: "string", name: "_metadataURI", type: "string" }],
+          inputs: [
+            { internalType: "string", name: "_metadataURI", type: "string" },
+          ],
           name: "setCollectionMetadata",
           outputs: [],
           stateMutability: "nonpayable",
@@ -364,7 +366,9 @@ export default function MyCollectionsPage() {
         signer
       );
 
-      const metadataTx = await collectionContract.setCollectionMetadata(metadataUri);
+      const metadataTx = await collectionContract.setCollectionMetadata(
+        metadataUri
+      );
       await metadataTx.wait();
 
       setUploadProgress("Collection created successfully!");

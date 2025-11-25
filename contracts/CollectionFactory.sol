@@ -31,7 +31,9 @@ contract Collection is ERC721URIStorage, Ownable {
         _burn(tokenId);
     }
 
-    function setCollectionMetadata(string memory _metadataURI) external onlyOwner {
+    function setCollectionMetadata(
+        string memory _metadataURI
+    ) external onlyOwner {
         collectionMetadataURI = _metadataURI;
     }
 }
@@ -54,10 +56,7 @@ contract CollectionFactory {
         string symbol
     );
 
-    event CollectionMetadataSet(
-        address indexed collection,
-        string metadataURI
-    );
+    event CollectionMetadataSet(address indexed collection, string metadataURI);
 
     /* ---------------------------------------------------------------------- */
     /*                           CREATE NEW COLLECTION                        */

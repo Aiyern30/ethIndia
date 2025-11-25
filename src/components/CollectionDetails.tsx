@@ -235,13 +235,15 @@ export default function CollectionDetailPage({
         signer
       );
 
-      const [name, symbol, owner, nextTokenId, metadataURI] = await Promise.all([
-        contract.name(),
-        contract.symbol(),
-        contract.owner(),
-        contract.nextTokenId(),
-        contract.collectionMetadataURI(), // ✅ FETCH FROM CONTRACT
-      ]);
+      const [name, symbol, owner, nextTokenId, metadataURI] = await Promise.all(
+        [
+          contract.name(),
+          contract.symbol(),
+          contract.owner(),
+          contract.nextTokenId(),
+          contract.collectionMetadataURI(), // ✅ FETCH FROM CONTRACT
+        ]
+      );
 
       setCollectionInfo({
         name,

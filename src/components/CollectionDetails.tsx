@@ -28,6 +28,17 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
 
 interface CollectionDetailProps {
   collectionAddress: string;
@@ -129,6 +140,9 @@ export default function CollectionDetailPage({
   const [uploadProgress, setUploadProgress] = useState("");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [burnDialogOpen, setBurnDialogOpen] = useState(false);
+  const [burnTokenId, setBurnTokenId] = useState<string | null>(null);
 
   const signer = useSigner();
   const address = useAddress();
@@ -323,15 +337,8 @@ export default function CollectionDetailPage({
     }
   }
 
+  // Update handleBurn to not show window.confirm
   async function handleBurn(tokenId: string) {
-    if (
-      !window.confirm(
-        "Are you sure you want to burn this NFT? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
     try {
       if (!signer) throw new Error("Wallet not connected");
 
@@ -548,12 +555,53 @@ export default function CollectionDetailPage({
                         </a>
 
                         {nft.owner.toLowerCase() === address?.toLowerCase() && (
-                          <button
-                            onClick={() => handleBurn(nft.tokenId)}
-                            className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <>
+                            <AlertDialog
+                              open={
+                                burnDialogOpen && burnTokenId === nft.tokenId
+                              }
+                              onOpenChange={(open) => {
+                                setBurnDialogOpen(open);
+                                if (!open) setBurnTokenId(null);
+                              }}
+                            >
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  onClick={() => {
+                                    setBurnTokenId(nft.tokenId);
+                                    setBurnDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Burn NFT</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to burn this NFT? This
+                                    action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={async () => {
+                                      if (burnTokenId) {
+                                        await handleBurn(burnTokenId);
+                                        setBurnDialogOpen(false);
+                                        setBurnTokenId(null);
+                                      }
+                                    }}
+                                  >
+                                    Burn
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
                         )}
                       </div>
                     </div>

@@ -127,6 +127,27 @@ export async function fetchCollectionMetadata(
   }
 }
 
+/**
+ * Store collection metadata URI in a public way
+ * For now, we'll emit it via an indexer or store in a public DB
+ * Alternative: Store in contract if you can redeploy
+ */
+export function storeCollectionMetadataPublicly(
+  contractAddress: string,
+  metadataUri: string
+) {
+  // Store in localStorage as fallback
+  localStorage.setItem(`collection_metadata_${contractAddress}`, metadataUri);
+  
+  // TODO: Also store in a public database or IPFS directory
+  // For production, use:
+  // - Firebase/Supabase
+  // - The Graph protocol
+  // - Your own backend API
+  
+  console.log("Collection metadata stored:", { contractAddress, metadataUri });
+}
+
 // ============================================================================
 // NFT STORAGE FUNCTIONS
 // ============================================================================
@@ -277,6 +298,9 @@ export async function updateNFTOwner(
  * Convert IPFS URI to HTTP gateway URL
  */
 export function resolveIPFS(uri: string): string {
+  if (!uri) return "";
+  
+  // Use Thirdweb's built-in resolver which handles ipfs:// URIs
   return storage.resolveScheme(uri);
 }
 

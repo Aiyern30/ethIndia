@@ -329,46 +329,48 @@ export default function MyCollectionsPage() {
       }
 
       if (!collectionAddress) {
-        throw new Error(
-          "Failed to get collection address from transaction. Please check Etherscan for the deployed contract."
-        );
+        throw new Error("Failed to get collection address");
       }
 
       // Upload metadata to IPFS
       setUploadProgress("Uploading collection metadata to IPFS...");
-      console.log("Uploading metadata for collection:", collectionAddress);
+      const { metadataUri } = await uploadCollectionMetadata({
+        name,
+        symbol,
+        description,
+        profileImageFile,
+        bannerImageFile,
+        tags,
+        contractAddress: collectionAddress,
+        totalSupply: 0,
+        creatorWallet: address,
+      });
 
-      try {
-        const { metadataUri } = await uploadCollectionMetadata({
-          name,
-          symbol,
-          description,
-          profileImageFile,
-          bannerImageFile,
-          tags,
-          contractAddress: collectionAddress,
-          totalSupply: 0,
-          creatorWallet: address,
-        });
+      // ✅ STORE METADATA URI ON-CHAIN
+      setUploadProgress("Storing metadata on-chain...");
+      const COLLECTION_ABI_WITH_METADATA = [
+        {
+          inputs: [{ internalType: "string", name: "_metadataURI", type: "string" }],
+          name: "setCollectionMetadata",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ];
 
-        console.log("Metadata uploaded successfully:", metadataUri);
+      const collectionContract = new ethers.Contract(
+        collectionAddress,
+        COLLECTION_ABI_WITH_METADATA,
+        signer
+      );
 
-        // Store metadata URI in localStorage for future reference
-        localStorage.setItem(
-          `${COLLECTION_METADATA_KEY}${collectionAddress}`,
-          metadataUri
-        );
+      const metadataTx = await collectionContract.setCollectionMetadata(metadataUri);
+      await metadataTx.wait();
 
-        setUploadProgress("Collection created successfully!");
-      } catch (uploadError: any) {
-        toast.error(`Metadata upload failed: ${uploadError.message}`);
+      setUploadProgress("Collection created successfully!");
 
-        // Still store the collection address even if metadata upload fails
-        localStorage.setItem(
-          `${COLLECTION_METADATA_KEY}${collectionAddress}`,
-          "metadata_upload_failed"
-        );
-      }
+      // No longer need localStorage
+      // localStorage.setItem(`${COLLECTION_METADATA_KEY}${collectionAddress}`, metadataUri);
 
       // Refresh collections
       await fetchCollections();

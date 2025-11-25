@@ -1,9 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      "images.unsplash.com",
-      "ipfs.io",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.ipfs.nftstorage.link",
+      },
+      {
+        protocol: "https",
+        hostname: "nftstorage.link",
+      },
+      {
+        protocol: "https",
+        hostname: "ipfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "**.ipfs.w3s.link",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
   webpack: (config, { isServer }) => {

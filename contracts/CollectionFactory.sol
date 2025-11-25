@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Collection is ERC721URIStorage, Ownable {
     uint256 public nextTokenId;
+    string public collectionMetadataURI; // ✅ ADD THIS
 
     constructor(
         string memory name,
@@ -29,6 +30,10 @@ contract Collection is ERC721URIStorage, Ownable {
         require(ownerOf(tokenId) == msg.sender, "Not NFT owner");
         _burn(tokenId);
     }
+
+    function setCollectionMetadata(string memory _metadataURI) external onlyOwner {
+        collectionMetadataURI = _metadataURI;
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -47,6 +52,11 @@ contract CollectionFactory {
         address indexed collection,
         string name,
         string symbol
+    );
+
+    event CollectionMetadataSet(
+        address indexed collection,
+        string metadataURI
     );
 
     /* ---------------------------------------------------------------------- */

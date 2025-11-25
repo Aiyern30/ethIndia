@@ -19,6 +19,8 @@ import {
   NFTAttribute,
   fetchNFTMetadata,
   uploadNFTMetadata,
+  fetchCollectionMetadata,
+  CollectionMetadata,
 } from "@/lib/storage";
 import { resolveIPFS } from "@/lib/utils";
 import {
@@ -103,6 +105,13 @@ const COLLECTION_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "collectionMetadataURI",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 
 interface NFT {
@@ -156,6 +165,8 @@ export default function CollectionDetailPage({
   const [collectionInfo, setCollectionInfo] = useState<CollectionInfo | null>(
     null
   );
+  const [collectionMetadata, setCollectionMetadata] =
+    useState<CollectionMetadata | null>(null);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMintModal, setShowMintModal] = useState(false);
@@ -224,11 +235,12 @@ export default function CollectionDetailPage({
         signer
       );
 
-      const [name, symbol, owner, nextTokenId] = await Promise.all([
+      const [name, symbol, owner, nextTokenId, metadataURI] = await Promise.all([
         contract.name(),
         contract.symbol(),
         contract.owner(),
         contract.nextTokenId(),
+        contract.collectionMetadataURI(), // ✅ FETCH FROM CONTRACT
       ]);
 
       setCollectionInfo({
@@ -237,6 +249,12 @@ export default function CollectionDetailPage({
         owner,
         totalSupply: nextTokenId.toNumber(),
       });
+
+      // ✅ FETCH METADATA FROM IPFS
+      if (metadataURI) {
+        const metadata = await fetchCollectionMetadata(metadataURI);
+        setCollectionMetadata(metadata);
+      }
 
       // Fetch all NFTs
       const nftPromises = [];
@@ -278,6 +296,25 @@ export default function CollectionDetailPage({
       setLoading(false);
     }
   }, [signer, collectionAddress]);
+
+  // Fetch collection metadata from localStorage and IPFS
+  useEffect(() => {
+    async function fetchMetadata() {
+      try {
+        const metadataUri = localStorage.getItem(
+          `collection_metadata_${collectionAddress}`
+        );
+        if (metadataUri && metadataUri !== "metadata_upload_failed") {
+          const metadata = await fetchCollectionMetadata(metadataUri);
+          setCollectionMetadata(metadata);
+        }
+      } catch {
+        // fallback: no metadata
+        setCollectionMetadata(null);
+      }
+    }
+    fetchMetadata();
+  }, [collectionAddress]);
 
   useEffect(() => {
     if (isReady && isConnected) {
@@ -493,54 +530,96 @@ export default function CollectionDetailPage({
           </div>
         ) : collectionInfo ? (
           <>
-            {/* Collection Header */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-8 border border-gray-200 dark:border-gray-700">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div>
-                  <h1 className="text-4xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                    {collectionInfo.name}
-                  </h1>
-                  <p className="text-xl text-gray-600 dark:text-gray-400 mb-4">
-                    {collectionInfo.symbol}
-                  </p>
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Total NFTs:
-                      </span>
-                      <span className="font-bold text-purple-600">
-                        {collectionInfo.totalSupply}
-                      </span>
+            {/* HERO BANNER WITH PROFILE ICON FROM METADATA */}
+            <div className="relative w-full mb-12">
+              {/* Banner */}
+              {collectionMetadata?.bannerImage ? (
+                <Image
+                  src={collectionMetadata.bannerImage}
+                  alt="Banner"
+                  fill
+                  className="object-cover rounded-3xl shadow-lg"
+                  style={{ zIndex: 1 }}
+                />
+              ) : (
+                <div className="h-52 md:h-64 w-full bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl shadow-lg" />
+              )}
+
+              {/* Profile Icon */}
+              {collectionMetadata?.profileImage && (
+                <div className="absolute left-6 bottom-6 w-20 h-20 md:w-28 md:h-28 rounded-2xl border-4 border-white dark:border-gray-900 shadow-lg overflow-hidden bg-white dark:bg-gray-900 flex items-center justify-center z-10">
+                  <Image
+                    src={collectionMetadata.profileImage}
+                    alt="Profile"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Title & Symbol */}
+              <div className="absolute bottom-6 left-32 text-white z-20">
+                <h1 className="text-4xl md:text-5xl font-extrabold drop-shadow-lg">
+                  {collectionInfo.name}
+                </h1>
+                <p className="text-lg opacity-90">{collectionInfo.symbol}</p>
+              </div>
+
+              {isOwner && (
+                <button
+                  onClick={() => setShowMintModal(true)}
+                  className="absolute bottom-6 right-6 px-5 py-3 bg-white/20 text-white font-semibold backdrop-blur-md rounded-xl hover:bg-white/30 transition"
+                >
+                  Mint NFT
+                </button>
+              )}
+            </div>
+
+            {/* Collection Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-gray-800 dark:text-white text-lg font-semibold mb-4">
+                  Collection Stats
+                </h3>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[120px]">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      Total NFTs
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        You Own:
-                      </span>
-                      <span className="font-bold text-pink-600">
-                        {myNFTs.length}
-                      </span>
+                    <div className="text-xl font-bold text-gray-800 dark:text-white">
+                      {collectionInfo.totalSupply}
                     </div>
                   </div>
-                  <a
-                    href={`https://sepolia.etherscan.io/address/${collectionAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-4 text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View Contract on Etherscan
-                  </a>
+                  <div className="flex-1 min-w-[120px]">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      You Own
+                    </div>
+                    <div className="text-xl font-bold text-gray-800 dark:text-white">
+                      {myNFTs.length}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-[120px]">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      Contract Address
+                    </div>
+                    <div className="text-xs font-mono text-gray-800 dark:text-white break-all">
+                      {collectionAddress}
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                {isOwner && (
-                  <button
-                    onClick={() => setShowMintModal(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 whitespace-nowrap"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Mint New NFT
-                  </button>
-                )}
+              {/* Activity Feed (Skeleton) */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 animate-pulse">
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/4 mb-4" />
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -631,6 +710,12 @@ export default function CollectionDetailPage({
                                   {String(attr.value)}
                                 </span>
                               ))}
+
+                            {nft.metadata.attributes.length > 3 && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                +{nft.metadata.attributes.length - 3} more
+                              </span>
+                            )}
                           </div>
                         )}
 
@@ -705,6 +790,15 @@ export default function CollectionDetailPage({
                     </div>
                   </div>
                 ))}
+
+                {/* Load more button */}
+                {nfts.length % 4 === 0 && (
+                  <div className="col-span-full text-center mt-4">
+                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition-all duration-200">
+                      Load More
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>

@@ -1,23 +1,27 @@
 import hre from "hardhat";
 
 async function main() {
-  const Marketplace = await hre.ethers.deployContract("Marketplace");
-  await Marketplace.waitForDeployment();
-  console.log("Marketplace deployed at:", Marketplace.target);
+  // Deploy Marketplace
+  const MarketplaceFactory = await hre.ethers.getContractFactory("Marketplace");
+  const marketplace = await MarketplaceFactory.deploy();
+  await marketplace.deployed();
+  console.log("Marketplace deployed at:", marketplace.address);
 
   // Verify Marketplace
   await hre.run("verify:verify", {
-    address: Marketplace.target,
+    address: marketplace.address,
     constructorArguments: [],
   });
 
-  const Factory = await hre.ethers.deployContract("CollectionFactory");
-  await Factory.waitForDeployment();
-  console.log("CollectionFactory deployed at:", Factory.target);
+  // Deploy CollectionFactory
+  const FactoryFactory = await hre.ethers.getContractFactory("CollectionFactory");
+  const factory = await FactoryFactory.deploy();
+  await factory.deployed();
+  console.log("CollectionFactory deployed at:", factory.address);
 
   // Verify CollectionFactory
   await hre.run("verify:verify", {
-    address: Factory.target,
+    address: factory.address,
     constructorArguments: [],
   });
 }
